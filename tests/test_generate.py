@@ -91,7 +91,8 @@ def test_origin_page_has_disclosure_and_placeholder(rt, ow, places):
     assert "marker=" not in html
 
 
-def test_origin_page_with_marker(rt, ow, places):
+def test_origin_page_with_marker(rt, ow, places, monkeypatch):
+    monkeypatch.delenv("TRAVELPAYOUTS_TRS", raising=False)
     html = g.render_origin("PUS", rt, ow, places, NOW, "123456")
     assert "?marker=123456" in html
     assert "제휴 ID 미설정" not in html
@@ -123,3 +124,13 @@ def test_index_compares_seoul_and_local(places):
     assert "같은 목적지, 서울 vs 지방" in html
     assert "<strong>120,000원</strong>" in html  # 더 싼 쪽(지방)이 굵게
     assert "SEL0112FUK04121" in html and "PUS0112FUK04121" in html
+
+
+def test_official_partner_link_when_project_id_set(monkeypatch):
+    monkeypatch.setenv("TRAVELPAYOUTS_TRS", "605555")
+    f = g.Fare("SEL", "FUK", g.date(2026, 12, 2), g.date(2027, 1, 7), 1, 0, 0, "")
+    # 링크 변환 API(links/v1/create)가 11-23 실제로 돌려준 형식과 같아야 한다
+    assert g.search_url(f, "809902") == (
+        "https://tp.media/r?campaign_id=100&marker=809902&p=4114&trs=605555"
+        "&u=https%3A%2F%2Fwww.aviasales.com%2Fsearch%2FSEL0212FUK07011"
+    )

@@ -34,6 +34,7 @@ jobs:
         env:
           TRAVELPAYOUTS_TOKEN: ${{ secrets.TRAVELPAYOUTS_TOKEN }}
           TRAVELPAYOUTS_MARKER: ${{ secrets.TRAVELPAYOUTS_MARKER }}
+          TRAVELPAYOUTS_TRS: ${{ secrets.TRAVELPAYOUTS_TRS }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

@@ -4,7 +4,7 @@ Travelpayouts Data API(/aviasales/v3/prices_for_dates)에서 출발 공항별
 왕복·편도 캐시 가격을 받아 목적지별 최저가를 골라 site/ 에 HTML로 쓴다.
 
 실행: python generate.py
-환경변수: TRAVELPAYOUTS_TOKEN(필수), TRAVELPAYOUTS_MARKER(선택, 제휴 ID)
+환경변수: TRAVELPAYOUTS_TOKEN(필수), TRAVELPAYOUTS_MARKER(선택, 제휴 ID), TRAVELPAYOUTS_TRS(선택, 프로젝트 ID)
 """
 
 from __future__ import annotations
@@ -17,6 +17,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import requests
+from urllib.parse import quote
 
 HERE = Path(__file__).resolve().parent
 SITE = HERE / "site"
@@ -171,7 +172,12 @@ def search_url(f: Fare, marker: str) -> str:
     """Aviasales 검색 결과 링크. 형식: /search/{출발}{DDMM}{도착}[{DDMM}]{성인수}."""
     params = f"{f.origin}{f.depart:%d%m}{f.destination}{f.ret:%d%m}1" if f.ret else f"{f.origin}{f.depart:%d%m}{f.destination}1"
     url = f"https://www.aviasales.com/search/{params}"
-    return f"{url}?marker={marker}" if marker else url
+    if not marker:
+        return url
+    trs = read_env_key("TRAVELPAYOUTS_TRS")  # 프로젝트 ID. 있으면 공식 제휴 링크(링크 변환 API가 돌려주는 형식)
+    if trs:
+        return f"https://tp.media/r?campaign_id=100&marker={marker}&p=4114&trs={trs}&u={quote(url, safe='')}"
+    return f"{url}?marker={marker}"
 
 
 # ---------- 표시 ----------
