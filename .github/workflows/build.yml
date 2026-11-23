@@ -1,0 +1,49 @@
+# 지방공항 특가 사이트: 매일 06:00(KST) 가격을 새로 받아 GitHub Pages에 올린다.
+# 이 파일은 "새 저장소의 루트"에 .github/workflows/build.yml 로 둔다.
+# (C:\pythoncode 공용 저장소 안에서는 하위 폴더라 동작하지 않는다.)
+# 필요한 Secrets: TRAVELPAYOUTS_TOKEN(필수), TRAVELPAYOUTS_MARKER(제휴 ID)
+name: build-and-deploy
+
+on:
+  schedule:
+    - cron: "0 21 * * *"   # 21:00 UTC = 다음 날 06:00 KST
+  workflow_dispatch:        # Actions 화면에서 손으로 돌리기
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -r requirements.txt
+      - run: python -m pytest -q tests
+      - run: python generate.py
+        env:
+          TRAVELPAYOUTS_TOKEN: ${{ secrets.TRAVELPAYOUTS_TOKEN }}
+          TRAVELPAYOUTS_MARKER: ${{ secrets.TRAVELPAYOUTS_MARKER }}
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
